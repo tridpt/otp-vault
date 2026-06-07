@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+
+# Dữ liệu nhạy cảm: KHÔNG commit secret/khóa
+storage/

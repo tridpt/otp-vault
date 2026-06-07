@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TOTP Manager - Quản lý mã 2FA</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>🔐 TOTP Manager</h1>
+    <p class="sub">Nhập secret key, nhận mã 6 số đổi mỗi 30 giây</p>
+  </header>
+
+  <main>
+    <!-- Sinh mã nhanh không lưu -->
+    <section class="card">
+      <h2>Sinh mã nhanh</h2>
+      <p class="hint">Dán chuỗi ký tự bí mật (secret key) vào đây để lấy mã ngay.</p>
+      <div class="row">
+        <input id="quickSecret" type="text" placeholder="VD: JBSW Y3DP EHPK 3PXP" autocomplete="off" />
+        <button id="quickBtn">Lấy mã</button>
+      </div>
+      <div id="quickResult" class="quick-result hidden">
+        <span id="quickCode" class="code"></span>
+        <span id="quickCountdown" class="countdown"></span>
+      </div>
+      <div id="quickError" class="error hidden"></div>
+    </section>
+
+    <!-- Thêm tài khoản để lưu -->
+    <section class="card">
+      <h2>Lưu tài khoản</h2>
+      <div class="row">
+        <input id="accName" type="text" placeholder="Tên (VD: Shop Shopee)" autocomplete="off" />
+        <input id="accSecret" type="text" placeholder="Secret key" autocomplete="off" />
+        <button id="addBtn">Thêm</button>
+      </div>
+      <div class="row">
+        <input id="otpauthUri" type="text" placeholder="hoặc dán chuỗi otpauth://..." autocomplete="off" />
+        <button id="importBtn" class="secondary">Nhập từ otpauth</button>
+      </div>
+
+      <div class="qr-actions">
+        <button id="scanCamBtn" class="secondary">📷 Quét bằng camera</button>
+        <button id="scanFileBtn" class="secondary">🖼️ Tải ảnh QR</button>
+        <input id="qrFile" type="file" accept="image/*" hidden />
+      </div>
+
+      <div id="camWrap" class="cam-wrap hidden">
+        <video id="camVideo" playsinline></video>
+        <div class="cam-bar">
+          <span id="camStatus">Đang tìm mã QR...</span>
+          <button id="camStopBtn" class="secondary">Dừng</button>
+        </div>
+      </div>
+
+      <div id="addError" class="error hidden"></div>
+    </section>
+
+    <!-- Danh sách tài khoản -->
+    <section class="card">
+      <h2>Tài khoản đã lưu</h2>
+      <input id="search" type="text" class="search" placeholder="🔍 Tìm theo tên..." autocomplete="off" />
+      <div id="accountList" class="account-list"></div>
+      <p id="emptyMsg" class="hint">Chưa có tài khoản nào.</p>
+    </section>
+  </main>
+
+  <script src="vendor/jsQR.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
