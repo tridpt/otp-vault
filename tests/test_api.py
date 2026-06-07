@@ -169,3 +169,29 @@ def test_export_csv(client):
 
 def test_export_csv_requires_unlock(client):
     assert client.get("/api/export-csv").status_code == 401
+
+
+def test_import_csv_via_api(client):
+    client.post("/api/setup", json={"password": PW})
+    csv_text = "name,secret\nmail1@x.com,JBSWY3DPEHPK3PXP\nmail2@x.com,GEZDGNBVGY3TQOJQ\n"
+    r = client.post("/api/import-csv", json={"csv": csv_text})
+    assert r.status_code == 200
+    assert r.json()["added"] == 2
+    assert len(client.get("/api/accounts").json()["accounts"]) == 2
+
+
+def test_import_csv_missing_secret_column_400(client):
+    client.post("/api/setup", json={"password": PW})
+    r = client.post("/api/import-csv", json={"csv": "name,email\na,b\n"})
+    assert r.status_code == 400
+
+
+def test_export_import_csv_roundtrip(client):
+    client.post("/api/setup", json={"password": PW})
+    client.post("/api/accounts", json={"name": "mail@x.com", "secret": SECRET})
+    csv_text = client.get("/api/export-csv").text
+    # Xóa hết rồi nhập lại từ chính CSV vừa xuất.
+    for a in client.get("/api/accounts").json()["accounts"]:
+        client.delete(f"/api/accounts/{a['id']}")
+    r = client.post("/api/import-csv", json={"csv": csv_text})
+    assert r.status_code == 200 and r.json()["added"] == 1

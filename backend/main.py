@@ -64,6 +64,10 @@ class ImportBackupRequest(BaseModel):
     backup: dict
 
 
+class ImportCsvRequest(BaseModel):
+    csv: str
+
+
 class RenameRequest(BaseModel):
     name: str
 
@@ -308,6 +312,41 @@ def export_csv() -> PlainTextResponse:
         writer.writerow([a.get("name", ""), secret, digits, period, algorithm, uri])
     # BOM giúp Excel mở đúng tiếng Việt (UTF-8).
     return PlainTextResponse("\ufeff" + buf.getvalue(), media_type="text/csv")
+
+
+@app.post("/api/import-csv")
+def import_csv(req: ImportCsvRequest) -> dict:
+    """Nhập hàng loạt tài khoản từ nội dung CSV.
+
+    CSV cần có dòng tiêu đề với ít nhất cột 'name' và 'secret' (các cột
+    'digits', 'period', 'algorithm' là tùy chọn). Bỏ qua mục trùng / secret sai.
+    """
+    _ensure_unlocked()
+    text = req.csv.lstrip("\ufeff")  # bỏ BOM nếu có
+    try:
+        reader = csv.DictReader(io.StringIO(text))
+        if reader.fieldnames is None or "secret" not in [
+            (f or "").strip().lower() for f in reader.fieldnames
+        ]:
+            raise HTTPException(status_code=400, detail="CSV cần cột 'secret'")
+        # Chuẩn hóa tên cột về chữ thường để khớp linh hoạt.
+        entries = []
+        for row in reader:
+            norm = {(k or "").strip().lower(): (v or "") for k, v in row.items()}
+            entries.append(
+                {
+                    "name": norm.get("name", ""),
+                    "secret": norm.get("secret", ""),
+                    "digits": norm.get("digits") or 6,
+                    "period": norm.get("period") or 30,
+                    "algorithm": norm.get("algorithm") or "SHA1",
+                }
+            )
+    except csv.Error as exc:
+        raise HTTPException(status_code=400, detail=f"CSV không hợp lệ: {exc}") from exc
+
+    added = session.import_entries(entries)
+    return {"added": added, "total_rows": len(entries)}
 
 
 # Phục vụ frontend tĩnh (đặt cuối để không che các route /api).

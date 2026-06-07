@@ -549,6 +549,28 @@ const backupFile = document.getElementById("backupFile");
 const backupMsg = document.getElementById("backupMsg");
 const backupError = document.getElementById("backupError");
 const exportCsvBtn = document.getElementById("exportCsvBtn");
+const importCsvBtn = document.getElementById("importCsvBtn");
+const csvFile = document.getElementById("csvFile");
+
+importCsvBtn.addEventListener("click", () => csvFile.click());
+csvFile.addEventListener("change", async () => {
+  clearError(backupError);
+  backupMsg.textContent = "";
+  const file = csvFile.files && csvFile.files[0];
+  csvFile.value = "";
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const res = await api("/import-csv", {
+      method: "POST",
+      body: JSON.stringify({ csv: text }),
+    });
+    backupMsg.textContent = `Đã nhập ${res.added}/${res.total_rows} tài khoản từ CSV.`;
+    await loadAccounts();
+  } catch (err) {
+    showError(backupError, err.message);
+  }
+});
 
 exportCsvBtn.addEventListener("click", async () => {
   clearError(backupError);

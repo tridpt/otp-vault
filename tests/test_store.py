@@ -228,3 +228,31 @@ def test_reorder_keeps_unmentioned_at_end():
     store.session.reorder_accounts([b["id"], "id-rac"])
     names = [x["name"] for x in store.session.load_accounts()]
     assert names == ["B", "A", "C"]
+
+
+# ----------------------- import_entries (CSV) -----------------------
+def test_import_entries_adds_valid():
+    store.session.setup(PW)
+    n = store.session.import_entries([
+        {"name": "a@x.com", "secret": SECRET},
+        {"name": "b@x.com", "secret": "GEZDGNBVGY3TQOJQ"},
+    ])
+    assert n == 2
+    assert len(store.session.load_accounts()) == 2
+
+
+def test_import_entries_skips_invalid_and_empty():
+    store.session.setup(PW)
+    n = store.session.import_entries([
+        {"name": "ok", "secret": SECRET},
+        {"name": "sai", "secret": "10101010"},   # base32 không hợp lệ
+        {"name": "rong", "secret": ""},            # thiếu secret
+    ])
+    assert n == 1
+
+
+def test_import_entries_skips_duplicates():
+    store.session.setup(PW)
+    store.session.add_account("dup", SECRET)
+    n = store.session.import_entries([{"name": "dup", "secret": SECRET}])
+    assert n == 0

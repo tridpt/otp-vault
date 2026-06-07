@@ -257,6 +257,43 @@ class Session:
             self._save_accounts(current)
         return added
 
+    def import_entries(self, entries: list[dict[str, Any]]) -> int:
+        """Nhập hàng loạt tài khoản (vd từ CSV). Trả về số mục thực sự thêm.
+
+        Mỗi entry cần ít nhất 'secret'. Bỏ qua mục trùng (cùng name + secret)
+        và mục có secret không hợp lệ. Cấp id mới cho từng mục.
+        """
+        from totp import TOTPError, normalize_secret
+
+        current = self.load_accounts()
+        existing = {(a.get("name"), a.get("secret")) for a in current}
+        added = 0
+        for e in entries:
+            secret = (e.get("secret") or "").strip()
+            name = (e.get("name") or "").strip() or "Tài khoản"
+            if not secret:
+                continue
+            try:
+                normalize_secret(secret)  # validate
+            except TOTPError:
+                continue
+            if (name, secret) in existing:
+                continue
+            account = {
+                "id": uuid.uuid4().hex[:12],
+                "name": name,
+                "secret": secret,
+                "digits": int(e.get("digits") or 6),
+                "period": int(e.get("period") or 30),
+                "algorithm": (e.get("algorithm") or "SHA1").upper(),
+            }
+            current.append(account)
+            existing.add((name, secret))
+            added += 1
+        if added:
+            self._save_accounts(current)
+        return added
+
 
 # Phiên dùng chung cho toàn bộ ứng dụng (chạy cục bộ, một người dùng).
 session = Session()

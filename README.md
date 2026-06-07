@@ -19,6 +19,8 @@ cho tất cả cùng lúc, bảo vệ bằng **mật khẩu chủ** và mã hóa
   máy khác; tự bỏ qua mục trùng khi khôi phục.
 - **Xuất CSV đọc được** (tên/mail + mã bí mật) để dùng khi cần — cảnh báo: file
   CSV chứa secret dạng văn bản rõ, chưa mã hóa.
+- **Nhập hàng loạt từ CSV** (cột tối thiểu `name`, `secret`) — bỏ qua mục trùng
+  và secret không hợp lệ.
 - Hiển thị mã + đếm ngược thời gian còn lại; tìm kiếm theo tên; bấm vào mã để copy.
 - **Đổi tên** và **sắp xếp** tài khoản (đưa lên/xuống).
 - **PWA**: cài được như app riêng (cửa sổ riêng, có icon) qua nút "Install" của trình duyệt.
@@ -79,6 +81,7 @@ pytest
 | DELETE | `/api/accounts/{id}` | Xóa tài khoản |
 | POST | `/api/export` | Xuất gói sao lưu mã hóa (mật khẩu riêng) |
 | GET | `/api/export-csv` | Xuất CSV đọc được (tên/mail + secret, chưa mã hóa) |
+| POST | `/api/import-csv` | Nhập hàng loạt tài khoản từ CSV |
 | POST | `/api/import` | Khôi phục từ gói sao lưu |
 
 ## Bảo mật
