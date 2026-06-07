@@ -171,6 +171,34 @@ class Session:
         self._save_accounts(remaining)
         return True
 
+    def rename_account(self, account_id: str, name: str) -> dict[str, Any] | None:
+        """Đổi tên tài khoản. Trả về tài khoản đã sửa, hoặc None nếu không có."""
+        accounts = self.load_accounts()
+        target = None
+        for a in accounts:
+            if a.get("id") == account_id:
+                a["name"] = name.strip() or "Tài khoản"
+                target = a
+                break
+        if target is None:
+            return None
+        self._save_accounts(accounts)
+        return target
+
+    def reorder_accounts(self, ordered_ids: list[str]) -> list[dict[str, Any]]:
+        """Sắp xếp lại tài khoản theo thứ tự id cho trước.
+
+        Các id không có trong danh sách hiện tại bị bỏ qua; tài khoản không
+        được nhắc tới sẽ giữ lại ở cuối (theo thứ tự cũ) để không mất dữ liệu.
+        """
+        accounts = self.load_accounts()
+        by_id = {a["id"]: a for a in accounts}
+        new_order = [by_id[i] for i in ordered_ids if i in by_id]
+        seen = {a["id"] for a in new_order}
+        new_order.extend(a for a in accounts if a["id"] not in seen)
+        self._save_accounts(new_order)
+        return new_order
+
     # ----- Sao lưu / khôi phục -----
     def export_backup(self, password: str) -> dict[str, Any]:
         """Xuất toàn bộ tài khoản thành 1 gói mã hóa bằng mật khẩu cho trước.

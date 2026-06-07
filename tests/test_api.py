@@ -125,3 +125,31 @@ def test_import_via_api_roundtrip(client):
     res = client.post("/api/import", json={"password": "backup99", "backup": backup})
     assert res.status_code == 200
     assert res.json()["added"] == 1
+
+
+def test_rename_via_api(client):
+    client.post("/api/setup", json={"password": PW})
+    acc = client.post("/api/accounts", json={"name": "Cu", "secret": SECRET}).json()
+    r = client.patch(f"/api/accounts/{acc['id']}", json={"name": "Moi"})
+    assert r.status_code == 200 and r.json()["name"] == "Moi"
+
+
+def test_rename_missing_via_api_404(client):
+    client.post("/api/setup", json={"password": PW})
+    assert client.patch("/api/accounts/khong-co", json={"name": "X"}).status_code == 404
+
+
+def test_reorder_via_api(client):
+    client.post("/api/setup", json={"password": PW})
+    a = client.post("/api/accounts", json={"name": "A", "secret": SECRET}).json()
+    b = client.post("/api/accounts", json={"name": "B", "secret": SECRET}).json()
+    r = client.post("/api/accounts/reorder", json={"ids": [b["id"], a["id"]]})
+    assert r.status_code == 200
+    names = [x["name"] for x in r.json()["accounts"]]
+    assert names == ["B", "A"]
+
+
+def test_rename_reorder_require_unlock(client):
+    # Khi khóa -> 401.
+    assert client.patch("/api/accounts/x", json={"name": "Y"}).status_code == 401
+    assert client.post("/api/accounts/reorder", json={"ids": []}).status_code == 401

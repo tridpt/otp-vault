@@ -176,3 +176,45 @@ def test_import_assigns_new_ids():
     store.session.import_backup("backup99", backup)
     new_ids = {a["id"] for a in store.session.load_accounts()}
     assert new_ids.isdisjoint(old_ids)
+
+
+# ----------------------- rename / reorder -----------------------
+def test_rename_account():
+    store.session.setup(PW)
+    acc = store.session.add_account("Cu", SECRET)
+    out = store.session.rename_account(acc["id"], "Moi")
+    assert out["name"] == "Moi"
+    assert store.session.get_account(acc["id"])["name"] == "Moi"
+
+
+def test_rename_missing_returns_none():
+    store.session.setup(PW)
+    assert store.session.rename_account("khong-co", "X") is None
+
+
+def test_rename_empty_falls_back_default():
+    store.session.setup(PW)
+    acc = store.session.add_account("Cu", SECRET)
+    out = store.session.rename_account(acc["id"], "   ")
+    assert out["name"] == "Tài khoản"
+
+
+def test_reorder_accounts():
+    store.session.setup(PW)
+    a = store.session.add_account("A", SECRET)
+    b = store.session.add_account("B", SECRET)
+    c = store.session.add_account("C", SECRET)
+    store.session.reorder_accounts([c["id"], a["id"], b["id"]])
+    names = [x["name"] for x in store.session.load_accounts()]
+    assert names == ["C", "A", "B"]
+
+
+def test_reorder_keeps_unmentioned_at_end():
+    store.session.setup(PW)
+    a = store.session.add_account("A", SECRET)
+    b = store.session.add_account("B", SECRET)
+    c = store.session.add_account("C", SECRET)
+    # Chỉ nhắc tới b -> b lên đầu, a và c giữ thứ tự cũ ở sau.
+    store.session.reorder_accounts([b["id"], "id-rac"])
+    names = [x["name"] for x in store.session.load_accounts()]
+    assert names == ["B", "A", "C"]

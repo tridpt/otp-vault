@@ -61,6 +61,14 @@ class ImportBackupRequest(BaseModel):
     backup: dict
 
 
+class RenameRequest(BaseModel):
+    name: str
+
+
+class ReorderRequest(BaseModel):
+    ids: list[str]
+
+
 # ----------------------- Helpers -----------------------
 def _ensure_unlocked() -> None:
     if not session.is_unlocked():
@@ -199,6 +207,24 @@ def remove_account(account_id: str) -> dict:
     if not session.delete_account(account_id):
         raise HTTPException(status_code=404, detail="Không tìm thấy tài khoản")
     return {"deleted": account_id}
+
+
+@app.patch("/api/accounts/{account_id}")
+def rename_account(account_id: str, req: RenameRequest) -> dict:
+    """Đổi tên tài khoản."""
+    _ensure_unlocked()
+    acc = session.rename_account(account_id, req.name)
+    if acc is None:
+        raise HTTPException(status_code=404, detail="Không tìm thấy tài khoản")
+    return _code_payload(acc)
+
+
+@app.post("/api/accounts/reorder")
+def reorder_accounts(req: ReorderRequest) -> dict:
+    """Sắp xếp lại thứ tự tài khoản theo danh sách id."""
+    _ensure_unlocked()
+    ordered = session.reorder_accounts(req.ids)
+    return {"accounts": [_code_payload(a) for a in ordered]}
 
 
 @app.get("/api/accounts/{account_id}/reveal")

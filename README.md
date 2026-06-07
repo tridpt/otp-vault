@@ -18,6 +18,7 @@ cho tất cả cùng lúc, bảo vệ bằng **mật khẩu chủ** và mã hóa
 - **Sao lưu & khôi phục**: xuất ra 1 file mã hóa (mật khẩu riêng), nhập lại trên
   máy khác; tự bỏ qua mục trùng khi khôi phục.
 - Hiển thị mã + đếm ngược thời gian còn lại; tìm kiếm theo tên; bấm vào mã để copy.
+- **Đổi tên** và **sắp xếp** tài khoản (đưa lên/xuống).
 
 ## Cài đặt & chạy
 
@@ -64,6 +65,8 @@ pytest
 | POST | `/api/generate` | Sinh mã từ secret, không lưu (không cần mở khóa) |
 | GET | `/api/accounts` | Danh sách tài khoản + mã hiện tại (cần mở khóa) |
 | POST | `/api/accounts` | Thêm tài khoản (name, secret) |
+| PATCH | `/api/accounts/{id}` | Đổi tên tài khoản |
+| POST | `/api/accounts/reorder` | Sắp xếp lại thứ tự (danh sách id) |
 | POST | `/api/accounts/import-uri` | Thêm từ chuỗi `otpauth://` |
 | GET | `/api/accounts/{id}/reveal` | Lấy secret + otpauth + QR (SVG) của 1 tài khoản |
 | DELETE | `/api/accounts/{id}` | Xóa tài khoản |

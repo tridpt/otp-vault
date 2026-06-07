@@ -223,6 +223,14 @@ button.secondary:hover { background: #343948; }
 }
 .reveal:hover { background: transparent; color: var(--accent); }
 
+.iconbtn {
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 7px;
+  font-size: 13px;
+}
+.iconbtn:hover { background: transparent; color: var(--accent); }
+
 /* Modal hiện QR / secret */
 .modal {
   position: fixed;

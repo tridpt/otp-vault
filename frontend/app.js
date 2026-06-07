@@ -393,6 +393,40 @@ async function deleteAccount(id) {
   }
 }
 
+async function renameAccount(id, currentName) {
+  const name = prompt("Tên mới cho tài khoản:", currentName || "");
+  if (name === null) return;
+  try {
+    await api("/accounts/" + id, {
+      method: "PATCH",
+      body: JSON.stringify({ name }),
+    });
+    await loadAccounts();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function moveAccount(id, direction) {
+  // Sắp xếp dựa trên thứ tự đầy đủ hiện tại (không theo bộ lọc tìm kiếm).
+  const idx = accounts.findIndex((a) => a.id === id);
+  const target = idx + direction;
+  if (idx < 0 || target < 0 || target >= accounts.length) return;
+  const order = accounts.map((a) => a.id);
+  [order[idx], order[target]] = [order[target], order[idx]];
+  // Cập nhật ngay tại chỗ cho mượt, rồi đồng bộ server.
+  [accounts[idx], accounts[target]] = [accounts[target], accounts[idx]];
+  renderAccounts();
+  try {
+    await api("/accounts/reorder", {
+      method: "POST",
+      body: JSON.stringify({ ids: order }),
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 function copyCode(code) {
   const raw = code.replace(/\s/g, "");
   navigator.clipboard?.writeText(raw);
@@ -431,6 +465,9 @@ function renderAccounts() {
             <span>${acc.remaining}</span>
             <div class="bar" style="width:${pct}%"></div>
           </div>
+          <button class="iconbtn move-up" data-id="${acc.id}" title="Lên">▲</button>
+          <button class="iconbtn move-down" data-id="${acc.id}" title="Xuống">▼</button>
+          <button class="iconbtn edit" data-id="${acc.id}" title="Đổi tên">✎</button>
           <button class="reveal" data-id="${acc.id}" title="Hiện QR / secret">🔳</button>
           <button class="del" data-id="${acc.id}">✕</button>
         </div>`;
@@ -442,6 +479,15 @@ function renderAccounts() {
       });
       item.querySelector(".reveal").addEventListener("click", () =>
         revealAccount(acc.id)
+      );
+      item.querySelector(".edit").addEventListener("click", () =>
+        renameAccount(acc.id, acc.name)
+      );
+      item.querySelector(".move-up").addEventListener("click", () =>
+        moveAccount(acc.id, -1)
+      );
+      item.querySelector(".move-down").addEventListener("click", () =>
+        moveAccount(acc.id, 1)
       );
     }
 
