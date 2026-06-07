@@ -20,11 +20,11 @@ body.light {
   --card: #ffffff;
   --border: #d9dce3;
   --text: #1a1d27;
-  --muted: #6b7280;
+  --muted: #515866;
   --accent: #2f6fe0;
   --accent-hover: #2560c8;
   --danger: #d23b3b;
-  --ok: #1faf5f;
+  --ok: #1f9d56;
   --inset: #f0f1f4;
   --secondary: #e6e8ef;
   --secondary-hover: #d7dae3;
@@ -134,7 +134,7 @@ button {
   transition: background 0.15s;
 }
 button:hover { background: var(--accent-hover); }
-button.secondary { background: var(--secondary); }
+button.secondary { background: var(--secondary); color: var(--text); }
 button.secondary:hover { background: var(--secondary-hover); }
 
 .search { width: 100%; margin-bottom: 14px; }
