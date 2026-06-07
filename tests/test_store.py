@@ -74,6 +74,16 @@ def test_remaining_idle_zero_when_locked():
     assert store.session.remaining_idle() == 0
 
 
+def test_missing_vault_file_treated_as_locked():
+    # Hardening: file vault bị xóa khi phiên còn mở -> coi như khóa, không 500.
+    store.session.setup(PW)
+    assert store.session.is_unlocked() is True
+    store.VAULT_PATH.unlink()  # xóa file vault
+    assert store.session.is_unlocked() is False
+    with pytest.raises(store.VaultLocked):
+        store.session.load_accounts()
+
+
 # ----------------------- CRUD tài khoản (Req 8) -----------------------
 def test_add_and_load_account():
     # Req 8.1

@@ -80,6 +80,11 @@ class Session:
         if time.time() - self.last_activity > AUTO_LOCK_SECONDS:
             self.lock()
             return False
+        # File vault bị xóa/di chuyển trong khi phiên còn mở -> coi như đã khóa
+        # (tránh đọc file không tồn tại gây lỗi 500).
+        if not VAULT_PATH.exists():
+            self.lock()
+            return False
         return True
 
     def touch(self) -> None:
