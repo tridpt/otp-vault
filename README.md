@@ -39,34 +39,9 @@ uvicorn main:app --reload --port 8200
 
 Mở trình duyệt: http://127.0.0.1:8200 — lần đầu sẽ yêu cầu tạo mật khẩu chủ.
 
-## Dùng trên điện thoại (cùng Wi-Fi)
-
-Chạy bằng launcher (lắng nghe toàn mạng LAN và in ra địa chỉ để mở trên điện thoại):
-
-```bat
-cd /d d:\AI_App\totp-manager
-.venv\Scripts\python.exe run_phone.py
-```
-
-Trên điện thoại (cùng Wi-Fi với máy tính), mở: `http://<IP-máy-tính>:8200`
-(ví dụ `http://192.168.1.134:8200`). Launcher sẽ in đúng IP của máy bạn.
-
-Nếu điện thoại không vào được, thường do **Windows Firewall** chặn. Mở
-PowerShell **bằng quyền Administrator** rồi chạy 1 lần:
-
-```powershell
-netsh advfirewall firewall add rule name="OTP Vault 8200" dir=in action=allow protocol=TCP localport=8200
-```
-
-> ⚠️ **Bảo mật:** khi chạy `run_phone.py`, app mở cho mọi thiết bị trong cùng
-> mạng LAN. Hãy đặt **mật khẩu chủ mạnh** và chỉ dùng trên **Wi-Fi tin cậy**
-> (mạng nhà riêng), không dùng trên Wi-Fi công cộng.
->
-> ℹ️ **Giới hạn qua http://**: trình duyệt chỉ cho dùng **camera** và **cài app
-> (PWA)** ở "ngữ cảnh bảo mật" (HTTPS hoặc localhost). Nên trên điện thoại qua
-> `http://` LAN sẽ **không quét QR bằng camera** và **không cài PWA** được.
-> Các chức năng còn lại (xem/copy mã, thêm bằng dán secret, sao lưu, hiện QR)
-> vẫn chạy bình thường. Muốn đủ tính năng trên điện thoại cần dựng HTTPS.
+> 🔒 App chỉ lắng nghe trên `127.0.0.1` (localhost) nên **chỉ máy này** truy cập
+> được — không thiết bị nào khác trong mạng vào được. Dữ liệu lưu mã hóa bằng
+> mật khẩu chủ và `storage/` đã `.gitignore` (không lên GitHub).
 
 ## Kiểm thử (test)
 
