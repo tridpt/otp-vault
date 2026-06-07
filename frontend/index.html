@@ -3,12 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TOTP Manager - Quản lý mã 2FA</title>
+  <title>OTP Vault - Quản lý mã 2FA</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Màn hình khóa: thiết lập hoặc mở khóa -->
+  <div id="lockScreen" class="lock-screen hidden">
+    <div class="lock-box">
+      <h1>🔐 OTP Vault</h1>
+      <p id="lockTitle" class="sub"></p>
+      <input id="lockPassword" type="password" placeholder="Mật khẩu chủ" autocomplete="current-password" />
+      <input id="lockPassword2" type="password" placeholder="Nhập lại mật khẩu" autocomplete="new-password" class="hidden" />
+      <button id="lockBtn">Mở khóa</button>
+      <div id="lockError" class="error hidden"></div>
+      <p class="hint" id="lockHint"></p>
+    </div>
+  </div>
+
   <header>
-    <h1>🔐 TOTP Manager</h1>
+    <div class="head-row">
+      <h1>🔐 OTP Vault</h1>
+      <div class="head-actions">
+        <button id="toggleHideBtn" class="secondary" title="Ẩn/hiện mã">👁️ Ẩn mã</button>
+        <button id="lockNowBtn" class="secondary" title="Khóa kho">🔒 Khóa</button>
+      </div>
+    </div>
     <p class="sub">Nhập secret key, nhận mã 6 số đổi mỗi 30 giây</p>
   </header>
 

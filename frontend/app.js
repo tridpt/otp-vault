@@ -254,6 +254,111 @@ scanCamBtn.addEventListener("click", async () => {
 
 camStopBtn.addEventListener("click", stopCamera);
 
+// ----------------------- Khóa / mở khóa kho -----------------------
+const lockScreen = document.getElementById("lockScreen");
+const lockTitle = document.getElementById("lockTitle");
+const lockPassword = document.getElementById("lockPassword");
+const lockPassword2 = document.getElementById("lockPassword2");
+const lockBtn = document.getElementById("lockBtn");
+const lockError = document.getElementById("lockError");
+const lockHint = document.getElementById("lockHint");
+const lockNowBtn = document.getElementById("lockNowBtn");
+const toggleHideBtn = document.getElementById("toggleHideBtn");
+
+let unlocked = false;
+let needSetup = false; // true = chưa có mật khẩu chủ -> chế độ thiết lập
+let hideCodes = false; // ẩn mã trong danh sách
+
+function showLockScreen() {
+  unlocked = false;
+  lockScreen.classList.remove("hidden");
+  lockPassword.value = "";
+  lockPassword2.value = "";
+  clearError(lockError);
+  if (needSetup) {
+    lockTitle.textContent = "Tạo mật khẩu chủ để bảo vệ kho mã";
+    lockPassword2.classList.remove("hidden");
+    lockBtn.textContent = "Tạo & mở khóa";
+    lockHint.textContent = "Mật khẩu này dùng để mã hóa dữ liệu. Quên là không khôi phục được.";
+  } else {
+    lockTitle.textContent = "Nhập mật khẩu chủ để mở khóa";
+    lockPassword2.classList.add("hidden");
+    lockBtn.textContent = "Mở khóa";
+    lockHint.textContent = "";
+  }
+  lockPassword.focus();
+}
+
+function hideLockScreen() {
+  unlocked = true;
+  lockScreen.classList.add("hidden");
+  loadAccounts();
+}
+
+async function refreshStatus() {
+  try {
+    const st = await api("/status");
+    needSetup = !st.initialized;
+    if (st.locked) {
+      showLockScreen();
+    } else {
+      hideLockScreen();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function doUnlock() {
+  clearError(lockError);
+  const pw = lockPassword.value;
+  if (!pw) {
+    showError(lockError, "Hãy nhập mật khẩu.");
+    return;
+  }
+  try {
+    if (needSetup) {
+      if (pw.length < 6) {
+        showError(lockError, "Mật khẩu tối thiểu 6 ký tự.");
+        return;
+      }
+      if (pw !== lockPassword2.value) {
+        showError(lockError, "Hai mật khẩu không khớp.");
+        return;
+      }
+      await api("/setup", { method: "POST", body: JSON.stringify({ password: pw }) });
+    } else {
+      await api("/unlock", { method: "POST", body: JSON.stringify({ password: pw }) });
+    }
+    needSetup = false;
+    hideLockScreen();
+  } catch (err) {
+    showError(lockError, err.message);
+  }
+}
+
+lockBtn.addEventListener("click", doUnlock);
+lockPassword.addEventListener("keydown", (e) => { if (e.key === "Enter") doUnlock(); });
+lockPassword2.addEventListener("keydown", (e) => { if (e.key === "Enter") doUnlock(); });
+
+lockNowBtn.addEventListener("click", async () => {
+  try {
+    await api("/lock", { method: "POST" });
+  } catch (err) {
+    console.error(err);
+  }
+  accounts = [];
+  renderAccounts();
+  needSetup = false;
+  showLockScreen();
+});
+
+toggleHideBtn.addEventListener("click", () => {
+  hideCodes = !hideCodes;
+  toggleHideBtn.textContent = hideCodes ? "👁️ Hiện mã" : "👁️ Ẩn mã";
+  renderAccounts();
+});
+
 // ----------------------- Danh sách tài khoản -----------------------
 const accountList = document.getElementById("accountList");
 const emptyMsg = document.getElementById("emptyMsg");
@@ -262,12 +367,19 @@ const search = document.getElementById("search");
 let accounts = [];
 
 async function loadAccounts() {
+  if (!unlocked) return;
   try {
     const data = await api("/accounts");
     accounts = data.accounts || [];
     renderAccounts();
   } catch (err) {
-    console.error(err);
+    // Hết hạn phiên (auto-lock) -> server trả 401 -> hiện lại màn khóa.
+    if (String(err.message).includes("khóa")) {
+      needSetup = false;
+      showLockScreen();
+    } else {
+      console.error(err);
+    }
   }
 }
 
@@ -308,10 +420,11 @@ function renderAccounts() {
         <button class="del" data-id="${acc.id}">✕</button>`;
     } else {
       const pct = Math.round((acc.remaining / acc.period) * 100);
+      const shown = hideCodes ? "••• •••" : formatCode(acc.code);
       item.innerHTML = `
         <div class="acc-info">
           <span class="acc-name">${escapeHtml(acc.name)}</span>
-          <span class="acc-code" title="Bấm để copy">${formatCode(acc.code)}</span>
+          <span class="acc-code" title="Bấm để copy">${shown}</span>
         </div>
         <div class="acc-right">
           <div class="ring" title="${acc.remaining}s còn lại">
@@ -343,6 +456,8 @@ function escapeHtml(str) {
 
 search.addEventListener("input", renderAccounts);
 
-// Tự làm mới mã mỗi giây (cập nhật mã + đếm ngược).
+// Tự làm mới mã mỗi giây khi đã mở khóa (cập nhật mã + đếm ngược).
 setInterval(loadAccounts, 1000);
-loadAccounts();
+
+// Khởi động: kiểm tra trạng thái kho (cần thiết lập / khóa / mở).
+refreshStatus();

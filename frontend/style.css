@@ -27,6 +27,46 @@ header {
 header h1 { font-size: 28px; }
 header .sub { color: var(--muted); margin-top: 4px; }
 
+.head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 640px;
+  margin: 0 auto;
+  gap: 12px;
+}
+.head-actions { display: flex; gap: 8px; }
+.head-actions button { padding: 8px 12px; font-size: 13px; }
+
+/* Màn hình khóa */
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.lock-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.lock-box h1 { font-size: 26px; }
+.lock-box .sub { color: var(--muted); font-size: 14px; margin-bottom: 4px; }
+.lock-box input { width: 100%; }
+.lock-box button { width: 100%; padding: 12px; }
+.lock-box .hint { margin: 0; }
+
 main {
   max-width: 640px;
   margin: 0 auto;
