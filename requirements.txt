@@ -5,4 +5,7 @@ uvicorn[standard]==0.30.6
 # Lưu danh sách tài khoản dạng mã hóa
 cryptography>=43.0.0
 
+# Sinh QR code (thuần Python) cho tính năng hiện lại QR/secret
+segno>=1.6.0
+
 # TOTP dùng thư viện chuẩn của Python (hmac/hashlib), không cần cài thêm.

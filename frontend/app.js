@@ -431,6 +431,7 @@ function renderAccounts() {
             <span>${acc.remaining}</span>
             <div class="bar" style="width:${pct}%"></div>
           </div>
+          <button class="reveal" data-id="${acc.id}" title="Hiện QR / secret">🔳</button>
           <button class="del" data-id="${acc.id}">✕</button>
         </div>`;
       const codeEl = item.querySelector(".acc-code");
@@ -439,6 +440,9 @@ function renderAccounts() {
         codeEl.classList.add("copied");
         setTimeout(() => codeEl.classList.remove("copied"), 600);
       });
+      item.querySelector(".reveal").addEventListener("click", () =>
+        revealAccount(acc.id)
+      );
     }
 
     item.querySelector(".del").addEventListener("click", () =>
@@ -455,6 +459,108 @@ function escapeHtml(str) {
 }
 
 search.addEventListener("input", renderAccounts);
+
+// ----------------------- Hiện QR / secret -----------------------
+const revealModal = document.getElementById("revealModal");
+const revealClose = document.getElementById("revealClose");
+const revealName = document.getElementById("revealName");
+const revealQr = document.getElementById("revealQr");
+const revealSecret = document.getElementById("revealSecret");
+const revealCopy = document.getElementById("revealCopy");
+
+async function revealAccount(id) {
+  try {
+    const data = await api("/accounts/" + id + "/reveal");
+    revealName.textContent = data.name;
+    revealQr.innerHTML = data.qr_svg || "<p class='hint'>(Không tạo được QR)</p>";
+    revealSecret.textContent = data.secret;
+    revealModal.classList.remove("hidden");
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function closeReveal() {
+  revealModal.classList.add("hidden");
+  revealQr.innerHTML = "";
+  revealSecret.textContent = "";
+}
+
+revealClose.addEventListener("click", closeReveal);
+revealModal.addEventListener("click", (e) => {
+  if (e.target === revealModal) closeReveal();
+});
+revealCopy.addEventListener("click", () => {
+  navigator.clipboard?.writeText(revealSecret.textContent);
+  revealCopy.textContent = "Đã copy";
+  setTimeout(() => (revealCopy.textContent = "Copy"), 800);
+});
+
+// ----------------------- Sao lưu / khôi phục -----------------------
+const exportBtn = document.getElementById("exportBtn");
+const importBtnFile = document.getElementById("importBtnFile");
+const backupFile = document.getElementById("backupFile");
+const backupMsg = document.getElementById("backupMsg");
+const backupError = document.getElementById("backupError");
+
+exportBtn.addEventListener("click", async () => {
+  clearError(backupError);
+  backupMsg.textContent = "";
+  const pw = prompt("Đặt mật khẩu cho file sao lưu (tối thiểu 6 ký tự):");
+  if (pw === null) return;
+  if (pw.length < 6) {
+    showError(backupError, "Mật khẩu sao lưu tối thiểu 6 ký tự.");
+    return;
+  }
+  try {
+    const data = await api("/export", {
+      method: "POST",
+      body: JSON.stringify({ password: pw }),
+    });
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `otp-vault-backup-${stamp}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    backupMsg.textContent = "Đã tạo file sao lưu. Giữ file + mật khẩu an toàn.";
+  } catch (err) {
+    showError(backupError, err.message);
+  }
+});
+
+importBtnFile.addEventListener("click", () => backupFile.click());
+backupFile.addEventListener("change", async () => {
+  clearError(backupError);
+  backupMsg.textContent = "";
+  const file = backupFile.files && backupFile.files[0];
+  if (!file) return;
+  let backup;
+  try {
+    backup = JSON.parse(await file.text());
+  } catch {
+    showError(backupError, "File không phải JSON hợp lệ.");
+    backupFile.value = "";
+    return;
+  }
+  const pw = prompt("Nhập mật khẩu của file sao lưu:");
+  backupFile.value = "";
+  if (pw === null) return;
+  try {
+    const res = await api("/import", {
+      method: "POST",
+      body: JSON.stringify({ password: pw, backup }),
+    });
+    backupMsg.textContent = `Đã khôi phục ${res.added} tài khoản.`;
+    await loadAccounts();
+  } catch (err) {
+    showError(backupError, err.message);
+  }
+});
 
 // Tự làm mới mã mỗi giây khi đã mở khóa (cập nhật mã + đếm ngược).
 setInterval(loadAccounts, 1000);

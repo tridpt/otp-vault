@@ -84,7 +84,34 @@
       <div id="accountList" class="account-list"></div>
       <p id="emptyMsg" class="hint">Chưa có tài khoản nào.</p>
     </section>
+
+    <!-- Sao lưu / khôi phục -->
+    <section class="card">
+      <h2>Sao lưu &amp; khôi phục</h2>
+      <p class="hint">Bản sao lưu được mã hóa bằng mật khẩu bạn tự đặt khi xuất.</p>
+      <div class="row">
+        <button id="exportBtn" class="secondary">⬇️ Xuất bản sao lưu</button>
+        <button id="importBtnFile" class="secondary">⬆️ Khôi phục từ file</button>
+        <input id="backupFile" type="file" accept="application/json,.json" hidden />
+      </div>
+      <div id="backupMsg" class="hint"></div>
+      <div id="backupError" class="error hidden"></div>
+    </section>
   </main>
+
+  <!-- Modal hiện QR / secret -->
+  <div id="revealModal" class="modal hidden">
+    <div class="modal-box">
+      <button id="revealClose" class="modal-close" title="Đóng">✕</button>
+      <h3 id="revealName"></h3>
+      <div id="revealQr" class="reveal-qr"></div>
+      <p class="hint">Secret (base32):</p>
+      <div class="reveal-secret">
+        <code id="revealSecret"></code>
+        <button id="revealCopy" class="secondary">Copy</button>
+      </div>
+    </div>
+  </div>
 
   <script src="vendor/jsQR.js"></script>
   <script src="app.js"></script>

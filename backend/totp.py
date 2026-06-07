@@ -110,3 +110,25 @@ def parse_otpauth(uri: str) -> dict:
         "period": int(qs.get("period", ["30"])[0]),
         "algorithm": qs.get("algorithm", ["SHA1"])[0].upper(),
     }
+
+
+def build_otpauth(
+    name: str,
+    secret: str,
+    *,
+    digits: int = 6,
+    period: int = 30,
+    algorithm: str = "SHA1",
+) -> str:
+    """Dựng chuỗi otpauth:// để tạo lại QR code (thêm vào app khác)."""
+    from urllib.parse import quote
+
+    label = quote(name.strip() or "Tài khoản")
+    sec = normalize_secret(secret).rstrip("=")
+    params = (
+        f"secret={sec}"
+        f"&digits={digits}"
+        f"&period={period}"
+        f"&algorithm={algorithm.upper()}"
+    )
+    return f"otpauth://totp/{label}?{params}"

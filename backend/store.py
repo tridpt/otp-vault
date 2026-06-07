@@ -131,6 +131,12 @@ class Session:
         data = json.loads(raw.decode("utf-8"))
         return data if isinstance(data, list) else []
 
+    def get_account(self, account_id: str) -> dict[str, Any] | None:
+        for a in self.load_accounts():
+            if a.get("id") == account_id:
+                return a
+        return None
+
     def _save_accounts(self, accounts: list[dict]) -> None:
         assert self.salt is not None and self.fernet is not None
         _write_vault_file(self.salt, self.fernet, accounts)
@@ -164,6 +170,59 @@ class Session:
             return False
         self._save_accounts(remaining)
         return True
+
+    # ----- Sao lưu / khôi phục -----
+    def export_backup(self, password: str) -> dict[str, Any]:
+        """Xuất toàn bộ tài khoản thành 1 gói mã hóa bằng mật khẩu cho trước.
+
+        Gói tự chứa salt riêng nên có thể khôi phục trên máy khác bằng đúng
+        mật khẩu đã đặt khi xuất.
+        """
+        accounts = self.load_accounts()
+        salt = os.urandom(16)
+        fernet = _derive_fernet(password, salt)
+        token = fernet.encrypt(
+            json.dumps(accounts, ensure_ascii=False).encode("utf-8")
+        )
+        return {
+            "type": "otp-vault-backup",
+            "version": 1,
+            "salt": base64.b64encode(salt).decode("ascii"),
+            "data": token.decode("ascii"),
+        }
+
+    def import_backup(self, password: str, backup: dict[str, Any]) -> int:
+        """Khôi phục từ gói sao lưu; gộp vào kho hiện tại. Trả về số mục thêm.
+
+        Bỏ qua các mục trùng (cùng tên + secret) để tránh nhân đôi.
+        """
+        if backup.get("type") != "otp-vault-backup":
+            raise ValueError("File sao lưu không hợp lệ")
+        try:
+            salt = base64.b64decode(backup["salt"])
+            fernet = _derive_fernet(password, salt)
+            raw = fernet.decrypt(backup["data"].encode("ascii"))
+        except (InvalidToken, KeyError, ValueError) as exc:
+            raise WrongPassword("Mật khẩu sao lưu không đúng") from exc
+
+        incoming = json.loads(raw.decode("utf-8"))
+        if not isinstance(incoming, list):
+            raise ValueError("Nội dung sao lưu không hợp lệ")
+
+        current = self.load_accounts()
+        existing = {(a.get("name"), a.get("secret")) for a in current}
+        added = 0
+        for acc in incoming:
+            key = (acc.get("name"), acc.get("secret"))
+            if key in existing:
+                continue
+            acc["id"] = uuid.uuid4().hex[:12]  # cấp id mới tránh trùng
+            current.append(acc)
+            existing.add(key)
+            added += 1
+        if added:
+            self._save_accounts(current)
+        return added
 
 
 # Phiên dùng chung cho toàn bộ ứng dụng (chạy cục bộ, một người dùng).

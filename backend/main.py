@@ -17,6 +17,11 @@ import totp
 from config import AUTO_LOCK_SECONDS
 from store import VaultLocked, WrongPassword, is_initialized, session
 
+try:
+    import segno  # sinh QR code (thuần Python)
+except ImportError:  # cho phép chạy nếu chưa cài; chỉ tính năng QR bị tắt
+    segno = None
+
 app = FastAPI(title="OTP Vault", version="2.0.0")
 
 app.add_middleware(
@@ -49,6 +54,11 @@ class AddAccountRequest(BaseModel):
 
 class ImportUriRequest(BaseModel):
     uri: str
+
+
+class ImportBackupRequest(BaseModel):
+    password: str
+    backup: dict
 
 
 # ----------------------- Helpers -----------------------
@@ -189,6 +199,55 @@ def remove_account(account_id: str) -> dict:
     if not session.delete_account(account_id):
         raise HTTPException(status_code=404, detail="Không tìm thấy tài khoản")
     return {"deleted": account_id}
+
+
+@app.get("/api/accounts/{account_id}/reveal")
+def reveal_account(account_id: str) -> dict:
+    """Trả secret + chuỗi otpauth + QR (SVG) để thêm tài khoản sang app khác."""
+    _ensure_unlocked()
+    acc = session.get_account(account_id)
+    if acc is None:
+        raise HTTPException(status_code=404, detail="Không tìm thấy tài khoản")
+    uri = totp.build_otpauth(
+        acc["name"],
+        acc["secret"],
+        digits=acc.get("digits", 6),
+        period=acc.get("period", 30),
+        algorithm=acc.get("algorithm", "SHA1"),
+    )
+    qr_svg = None
+    if segno is not None:
+        qr = segno.make(uri, error="m")
+        qr_svg = qr.svg_inline(scale=5, dark="#0f1117", light="#ffffff")
+    return {
+        "name": acc["name"],
+        "secret": totp.normalize_secret(acc["secret"]).rstrip("="),
+        "otpauth": uri,
+        "qr_svg": qr_svg,
+    }
+
+
+# ----------------------- Sao lưu / khôi phục (cần mở khóa) -----------------------
+@app.post("/api/export")
+def export_backup(req: PasswordRequest) -> dict:
+    """Xuất gói sao lưu mã hóa bằng mật khẩu do người dùng đặt."""
+    _ensure_unlocked()
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Mật khẩu sao lưu tối thiểu 6 ký tự")
+    return session.export_backup(req.password)
+
+
+@app.post("/api/import")
+def import_backup(req: ImportBackupRequest) -> dict:
+    """Khôi phục từ gói sao lưu; gộp vào kho hiện tại."""
+    _ensure_unlocked()
+    try:
+        added = session.import_backup(req.password, req.backup)
+    except WrongPassword as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"added": added}
 
 
 # Phục vụ frontend tĩnh (đặt cuối để không che các route /api).

@@ -14,6 +14,9 @@ cho tất cả cùng lúc, bảo vệ bằng **mật khẩu chủ** và mã hóa
 - **Sinh mã nhanh**: dán secret key → ra mã ngay (không cần mở khóa, không lưu).
 - **Lưu tài khoản**: nhập tên + secret, dán chuỗi `otpauth://`, hoặc **quét QR**
   (camera hoặc tải ảnh lên — giải mã ngay trong trình duyệt bằng jsQR).
+- **Hiện lại QR / secret** của từng tài khoản để thêm sang điện thoại/app khác.
+- **Sao lưu & khôi phục**: xuất ra 1 file mã hóa (mật khẩu riêng), nhập lại trên
+  máy khác; tự bỏ qua mục trùng khi khôi phục.
 - Hiển thị mã + đếm ngược thời gian còn lại; tìm kiếm theo tên; bấm vào mã để copy.
 
 ## Cài đặt & chạy
@@ -45,7 +48,10 @@ Mở trình duyệt: http://127.0.0.1:8200 — lần đầu sẽ yêu cầu tạ
 | GET | `/api/accounts` | Danh sách tài khoản + mã hiện tại (cần mở khóa) |
 | POST | `/api/accounts` | Thêm tài khoản (name, secret) |
 | POST | `/api/accounts/import-uri` | Thêm từ chuỗi `otpauth://` |
+| GET | `/api/accounts/{id}/reveal` | Lấy secret + otpauth + QR (SVG) của 1 tài khoản |
 | DELETE | `/api/accounts/{id}` | Xóa tài khoản |
+| POST | `/api/export` | Xuất gói sao lưu mã hóa (mật khẩu riêng) |
+| POST | `/api/import` | Khôi phục từ gói sao lưu |
 
 ## Bảo mật
 - Dữ liệu lưu trong `storage/vault.bin` = `{ salt, data }`, `data` được mã hóa
