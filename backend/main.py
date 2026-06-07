@@ -6,10 +6,13 @@
 """
 from __future__ import annotations
 
+import csv
+import io
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -276,6 +279,35 @@ def import_backup(req: ImportBackupRequest) -> dict:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"added": added}
+
+
+@app.get("/api/export-csv", response_class=PlainTextResponse)
+def export_csv() -> PlainTextResponse:
+    """Xuất danh sách tài khoản ra CSV ĐỌC ĐƯỢC (tên/mail + secret).
+
+    CẢNH BÁO: file chứa secret ở dạng văn bản rõ, KHÔNG mã hóa. Chỉ dùng khi cần
+    và giữ file an toàn / xóa sau khi dùng xong.
+    """
+    _ensure_unlocked()
+    accounts = session.load_accounts()
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["name", "secret", "digits", "period", "algorithm", "otpauth"])
+    for a in accounts:
+        digits = a.get("digits", 6)
+        period = a.get("period", 30)
+        algorithm = a.get("algorithm", "SHA1")
+        try:
+            secret = totp.normalize_secret(a["secret"]).rstrip("=")
+            uri = totp.build_otpauth(
+                a["name"], a["secret"], digits=digits, period=period, algorithm=algorithm
+            )
+        except totp.TOTPError:
+            secret = a.get("secret", "")
+            uri = ""
+        writer.writerow([a.get("name", ""), secret, digits, period, algorithm, uri])
+    # BOM giúp Excel mở đúng tiếng Việt (UTF-8).
+    return PlainTextResponse("\ufeff" + buf.getvalue(), media_type="text/csv")
 
 
 # Phục vụ frontend tĩnh (đặt cuối để không che các route /api).

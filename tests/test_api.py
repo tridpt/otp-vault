@@ -153,3 +153,19 @@ def test_rename_reorder_require_unlock(client):
     # Khi khóa -> 401.
     assert client.patch("/api/accounts/x", json={"name": "Y"}).status_code == 401
     assert client.post("/api/accounts/reorder", json={"ids": []}).status_code == 401
+
+
+def test_export_csv(client):
+    client.post("/api/setup", json={"password": PW})
+    client.post("/api/accounts", json={"name": "mail@gmail.com", "secret": SECRET})
+    r = client.get("/api/export-csv")
+    assert r.status_code == 200
+    assert "text/csv" in r.headers["content-type"]
+    body = r.text
+    assert "name,secret,digits,period,algorithm,otpauth" in body
+    assert "mail@gmail.com" in body
+    assert SECRET in body  # secret dạng văn bản rõ
+
+
+def test_export_csv_requires_unlock(client):
+    assert client.get("/api/export-csv").status_code == 401

@@ -548,6 +548,35 @@ const importBtnFile = document.getElementById("importBtnFile");
 const backupFile = document.getElementById("backupFile");
 const backupMsg = document.getElementById("backupMsg");
 const backupError = document.getElementById("backupError");
+const exportCsvBtn = document.getElementById("exportCsvBtn");
+
+exportCsvBtn.addEventListener("click", async () => {
+  clearError(backupError);
+  backupMsg.textContent = "";
+  if (!confirm(
+    "File CSV sẽ chứa MÃ BÍ MẬT dạng văn bản rõ (chưa mã hóa).\n" +
+    "Chỉ tải về khi thật sự cần và giữ file an toàn. Tiếp tục?"
+  )) return;
+  try {
+    const res = await fetch(API + "/export-csv");
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.detail || "Lỗi không xác định");
+    }
+    const text = await res.text();
+    const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `otp-vault-accounts-${stamp}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    backupMsg.textContent = "Đã xuất CSV. Nhớ xóa file sau khi dùng xong.";
+  } catch (err) {
+    showError(backupError, err.message);
+  }
+});
 
 exportBtn.addEventListener("click", async () => {
   clearError(backupError);

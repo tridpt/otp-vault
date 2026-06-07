@@ -17,6 +17,8 @@ cho tất cả cùng lúc, bảo vệ bằng **mật khẩu chủ** và mã hóa
 - **Hiện lại QR / secret** của từng tài khoản để thêm sang điện thoại/app khác.
 - **Sao lưu & khôi phục**: xuất ra 1 file mã hóa (mật khẩu riêng), nhập lại trên
   máy khác; tự bỏ qua mục trùng khi khôi phục.
+- **Xuất CSV đọc được** (tên/mail + mã bí mật) để dùng khi cần — cảnh báo: file
+  CSV chứa secret dạng văn bản rõ, chưa mã hóa.
 - Hiển thị mã + đếm ngược thời gian còn lại; tìm kiếm theo tên; bấm vào mã để copy.
 - **Đổi tên** và **sắp xếp** tài khoản (đưa lên/xuống).
 - **PWA**: cài được như app riêng (cửa sổ riêng, có icon) qua nút "Install" của trình duyệt.
@@ -76,6 +78,7 @@ pytest
 | GET | `/api/accounts/{id}/reveal` | Lấy secret + otpauth + QR (SVG) của 1 tài khoản |
 | DELETE | `/api/accounts/{id}` | Xóa tài khoản |
 | POST | `/api/export` | Xuất gói sao lưu mã hóa (mật khẩu riêng) |
+| GET | `/api/export-csv` | Xuất CSV đọc được (tên/mail + secret, chưa mã hóa) |
 | POST | `/api/import` | Khôi phục từ gói sao lưu |
 
 ## Bảo mật
