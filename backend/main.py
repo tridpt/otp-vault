@@ -244,7 +244,9 @@ def reveal_account(account_id: str) -> dict:
     qr_svg = None
     if segno is not None:
         qr = segno.make(uri, error="m")
-        qr_svg = qr.svg_inline(scale=5, dark="#0f1117", light="#ffffff")
+        # omitsize=True -> SVG có viewBox vuông, không có width/height cố định,
+        # nhờ đó CSS co giãn đúng tỉ lệ (không bị méo/cắt xén).
+        qr_svg = qr.svg_inline(scale=5, omitsize=True, dark="#0f1117", light="#ffffff")
     return {
         "name": acc["name"],
         "secret": totp.normalize_secret(acc["secret"]).rstrip("="),
