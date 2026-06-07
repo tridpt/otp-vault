@@ -613,3 +613,12 @@ setInterval(loadAccounts, 1000);
 
 // Khởi động: kiểm tra trạng thái kho (cần thiết lập / khóa / mở).
 refreshStatus();
+
+// Đăng ký service worker để cài được như app (PWA).
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch((err) =>
+      console.warn("Đăng ký service worker thất bại:", err)
+    );
+  });
+}

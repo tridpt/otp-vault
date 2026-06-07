@@ -19,6 +19,7 @@ cho tất cả cùng lúc, bảo vệ bằng **mật khẩu chủ** và mã hóa
   máy khác; tự bỏ qua mục trùng khi khôi phục.
 - Hiển thị mã + đếm ngược thời gian còn lại; tìm kiếm theo tên; bấm vào mã để copy.
 - **Đổi tên** và **sắp xếp** tài khoản (đưa lên/xuống).
+- **PWA**: cài được như app riêng (cửa sổ riêng, có icon) qua nút "Install" của trình duyệt.
 
 ## Cài đặt & chạy
 
