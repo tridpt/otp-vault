@@ -427,24 +427,24 @@ async function editNote(id, currentNote) {
   }
 }
 
-async function moveAccount(id, direction) {
-  // Sắp xếp dựa trên thứ tự đầy đủ hiện tại (không theo bộ lọc tìm kiếm).
-  const idx = accounts.findIndex((a) => a.id === id);
-  const target = idx + direction;
-  if (idx < 0 || target < 0 || target >= accounts.length) return;
+let draggedId = null;
+
+function reorderByDrop(targetId) {
+  if (!draggedId || draggedId === targetId) return;
   const order = accounts.map((a) => a.id);
-  [order[idx], order[target]] = [order[target], order[idx]];
-  // Cập nhật ngay tại chỗ cho mượt, rồi đồng bộ server.
-  [accounts[idx], accounts[target]] = [accounts[target], accounts[idx]];
+  const from = order.indexOf(draggedId);
+  if (from < 0) return;
+  order.splice(from, 1);
+  const insertAt = order.indexOf(targetId);
+  if (insertAt < 0) return;
+  order.splice(insertAt, 0, draggedId); // chèn trước mục đích
+  const byId = Object.fromEntries(accounts.map((a) => [a.id, a]));
+  accounts = order.map((id) => byId[id]);
   renderAccounts();
-  try {
-    await api("/accounts/reorder", {
-      method: "POST",
-      body: JSON.stringify({ ids: order }),
-    });
-  } catch (err) {
-    console.error(err);
-  }
+  api("/accounts/reorder", {
+    method: "POST",
+    body: JSON.stringify({ ids: order }),
+  }).catch((err) => console.error(err));
 }
 
 function copyCode(code) {
@@ -464,12 +464,17 @@ function renderAccounts() {
   filtered.forEach((acc) => {
     const item = document.createElement("div");
     item.className = "account-item";
+    item.draggable = true;
+    item.dataset.id = acc.id;
 
     if (acc.error) {
       item.innerHTML = `
-        <div class="acc-info">
-          <span class="acc-name">${escapeHtml(acc.name)}</span>
-          <span class="error-inline">⚠ ${escapeHtml(acc.error)}</span>
+        <div class="acc-left">
+          <span class="drag-handle" title="Kéo để sắp xếp">⠿</span>
+          <div class="acc-info">
+            <span class="acc-name">${escapeHtml(acc.name)}</span>
+            <span class="error-inline">⚠ ${escapeHtml(acc.error)}</span>
+          </div>
         </div>
         <button class="del" data-id="${acc.id}">✕</button>`;
     } else {
@@ -479,18 +484,19 @@ function renderAccounts() {
         ? `<span class="acc-note">${escapeHtml(acc.note)}</span>`
         : "";
       item.innerHTML = `
-        <div class="acc-info">
-          <span class="acc-name">${escapeHtml(acc.name)}</span>
-          <span class="acc-code" title="Bấm để copy">${shown}</span>
-          ${noteHtml}
+        <div class="acc-left">
+          <span class="drag-handle" title="Kéo để sắp xếp">⠿</span>
+          <div class="acc-info">
+            <span class="acc-name">${escapeHtml(acc.name)}</span>
+            <span class="acc-code" title="Bấm để copy">${shown}</span>
+            ${noteHtml}
+          </div>
         </div>
         <div class="acc-right">
           <div class="ring" title="${acc.remaining}s còn lại">
             <span>${acc.remaining}</span>
             <div class="bar" style="width:${pct}%"></div>
           </div>
-          <button class="iconbtn move-up" data-id="${acc.id}" title="Lên">▲</button>
-          <button class="iconbtn move-down" data-id="${acc.id}" title="Xuống">▼</button>
           <button class="iconbtn edit" data-id="${acc.id}" title="Đổi tên">✎</button>
           <button class="iconbtn note" data-id="${acc.id}" title="Ghi chú">📝</button>
           <button class="reveal" data-id="${acc.id}" title="Hiện QR / secret">🔳</button>
@@ -511,13 +517,32 @@ function renderAccounts() {
       item.querySelector(".note").addEventListener("click", () =>
         editNote(acc.id, acc.note)
       );
-      item.querySelector(".move-up").addEventListener("click", () =>
-        moveAccount(acc.id, -1)
-      );
-      item.querySelector(".move-down").addEventListener("click", () =>
-        moveAccount(acc.id, 1)
-      );
     }
+
+    // Kéo-thả sắp xếp.
+    item.addEventListener("dragstart", () => {
+      draggedId = acc.id;
+      item.classList.add("dragging");
+    });
+    item.addEventListener("dragend", () => {
+      draggedId = null;
+      item.classList.remove("dragging");
+      document
+        .querySelectorAll(".account-item.drag-over")
+        .forEach((el) => el.classList.remove("drag-over"));
+    });
+    item.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      if (draggedId && draggedId !== acc.id) item.classList.add("drag-over");
+    });
+    item.addEventListener("dragleave", () =>
+      item.classList.remove("drag-over")
+    );
+    item.addEventListener("drop", (e) => {
+      e.preventDefault();
+      item.classList.remove("drag-over");
+      reorderByDrop(acc.id);
+    });
 
     item.querySelector(".del").addEventListener("click", () =>
       deleteAccount(acc.id)
@@ -689,6 +714,23 @@ backupFile.addEventListener("change", async () => {
 
 // Tự làm mới mã mỗi giây khi đã mở khóa (cập nhật mã + đếm ngược).
 setInterval(loadAccounts, 1000);
+
+// ----------------------- Giao diện sáng/tối -----------------------
+const themeBtn = document.getElementById("themeBtn");
+
+function applyTheme(theme) {
+  document.body.classList.toggle("light", theme === "light");
+  themeBtn.textContent = theme === "light" ? "🌙 Tối" : "☀️ Sáng";
+}
+
+let currentTheme = localStorage.getItem("otpvault-theme") || "dark";
+applyTheme(currentTheme);
+
+themeBtn.addEventListener("click", () => {
+  currentTheme = currentTheme === "light" ? "dark" : "light";
+  applyTheme(currentTheme);
+  localStorage.setItem("otpvault-theme", currentTheme);
+});
 
 // Khởi động: kiểm tra trạng thái kho (cần thiết lập / khóa / mở).
 refreshStatus();

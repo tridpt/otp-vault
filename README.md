@@ -22,8 +22,9 @@ cho tất cả cùng lúc, bảo vệ bằng **mật khẩu chủ** và mã hóa
 - **Nhập hàng loạt từ CSV** (cột tối thiểu `name`, `secret`) — bỏ qua mục trùng
   và secret không hợp lệ.
 - Hiển thị mã + đếm ngược thời gian còn lại; tìm kiếm theo tên; bấm vào mã để copy.
-- **Đổi tên** và **sắp xếp** tài khoản (đưa lên/xuống).
+- **Đổi tên** và **sắp xếp** tài khoản (kéo-thả).
 - **Ghi chú** cho từng tài khoản (nhóm/mục đích) — hiển thị dưới tên, có trong CSV.
+- **Giao diện sáng/tối** (lưu lựa chọn trong trình duyệt).
 - **PWA**: cài được như app riêng (cửa sổ riêng, có icon) qua nút "Install" của trình duyệt.
 
 ## Cài đặt & chạy
