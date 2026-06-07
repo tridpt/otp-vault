@@ -89,6 +89,7 @@ quickSecret.addEventListener("keydown", (e) => {
 // ----------------------- Thêm / nhập tài khoản -----------------------
 const accName = document.getElementById("accName");
 const accSecret = document.getElementById("accSecret");
+const accNote = document.getElementById("accNote");
 const addBtn = document.getElementById("addBtn");
 const otpauthUri = document.getElementById("otpauthUri");
 const importBtn = document.getElementById("importBtn");
@@ -104,10 +105,15 @@ async function addAccount() {
   try {
     await api("/accounts", {
       method: "POST",
-      body: JSON.stringify({ name: accName.value.trim(), secret }),
+      body: JSON.stringify({
+        name: accName.value.trim(),
+        secret,
+        note: accNote.value.trim(),
+      }),
     });
     accName.value = "";
     accSecret.value = "";
+    accNote.value = "";
     await loadAccounts();
   } catch (err) {
     showError(addError, err.message);
@@ -407,6 +413,20 @@ async function renameAccount(id, currentName) {
   }
 }
 
+async function editNote(id, currentNote) {
+  const note = prompt("Ghi chú cho tài khoản (để trống để xóa):", currentNote || "");
+  if (note === null) return;
+  try {
+    await api("/accounts/" + id + "/note", {
+      method: "PATCH",
+      body: JSON.stringify({ note }),
+    });
+    await loadAccounts();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
 async function moveAccount(id, direction) {
   // Sắp xếp dựa trên thứ tự đầy đủ hiện tại (không theo bộ lọc tìm kiếm).
   const idx = accounts.findIndex((a) => a.id === id);
@@ -455,10 +475,14 @@ function renderAccounts() {
     } else {
       const pct = Math.round((acc.remaining / acc.period) * 100);
       const shown = hideCodes ? "••• •••" : formatCode(acc.code);
+      const noteHtml = acc.note
+        ? `<span class="acc-note">${escapeHtml(acc.note)}</span>`
+        : "";
       item.innerHTML = `
         <div class="acc-info">
           <span class="acc-name">${escapeHtml(acc.name)}</span>
           <span class="acc-code" title="Bấm để copy">${shown}</span>
+          ${noteHtml}
         </div>
         <div class="acc-right">
           <div class="ring" title="${acc.remaining}s còn lại">
@@ -468,6 +492,7 @@ function renderAccounts() {
           <button class="iconbtn move-up" data-id="${acc.id}" title="Lên">▲</button>
           <button class="iconbtn move-down" data-id="${acc.id}" title="Xuống">▼</button>
           <button class="iconbtn edit" data-id="${acc.id}" title="Đổi tên">✎</button>
+          <button class="iconbtn note" data-id="${acc.id}" title="Ghi chú">📝</button>
           <button class="reveal" data-id="${acc.id}" title="Hiện QR / secret">🔳</button>
           <button class="del" data-id="${acc.id}">✕</button>
         </div>`;
@@ -482,6 +507,9 @@ function renderAccounts() {
       );
       item.querySelector(".edit").addEventListener("click", () =>
         renameAccount(acc.id, acc.name)
+      );
+      item.querySelector(".note").addEventListener("click", () =>
+        editNote(acc.id, acc.note)
       );
       item.querySelector(".move-up").addEventListener("click", () =>
         moveAccount(acc.id, -1)

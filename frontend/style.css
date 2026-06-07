@@ -190,6 +190,7 @@ button.secondary:hover { background: #343948; }
   cursor: pointer;
 }
 .acc-code.copied { color: var(--ok); }
+.acc-note { font-size: 12px; color: var(--muted); font-style: italic; margin-top: 2px; }
 .acc-right { display: flex; align-items: center; gap: 14px; }
 
 .ring {

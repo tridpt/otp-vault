@@ -154,6 +154,7 @@ class Session:
         digits: int = 6,
         period: int = 30,
         algorithm: str = "SHA1",
+        note: str = "",
     ) -> dict[str, Any]:
         accounts = self.load_accounts()
         account = {
@@ -163,6 +164,7 @@ class Session:
             "digits": digits,
             "period": period,
             "algorithm": algorithm.upper(),
+            "note": note.strip(),
         }
         accounts.append(account)
         self._save_accounts(accounts)
@@ -183,6 +185,20 @@ class Session:
         for a in accounts:
             if a.get("id") == account_id:
                 a["name"] = name.strip() or "Tài khoản"
+                target = a
+                break
+        if target is None:
+            return None
+        self._save_accounts(accounts)
+        return target
+
+    def set_note(self, account_id: str, note: str) -> dict[str, Any] | None:
+        """Đặt/sửa ghi chú cho tài khoản. Trả về tài khoản đã sửa, hoặc None."""
+        accounts = self.load_accounts()
+        target = None
+        for a in accounts:
+            if a.get("id") == account_id:
+                a["note"] = note.strip()
                 target = a
                 break
         if target is None:
@@ -286,6 +302,7 @@ class Session:
                 "digits": int(e.get("digits") or 6),
                 "period": int(e.get("period") or 30),
                 "algorithm": (e.get("algorithm") or "SHA1").upper(),
+                "note": (e.get("note") or "").strip(),
             }
             current.append(account)
             existing.add((name, secret))

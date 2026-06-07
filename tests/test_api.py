@@ -162,7 +162,7 @@ def test_export_csv(client):
     assert r.status_code == 200
     assert "text/csv" in r.headers["content-type"]
     body = r.text
-    assert "name,secret,digits,period,algorithm,otpauth" in body
+    assert "name,secret,digits,period,algorithm,note,otpauth" in body
     assert "mail@gmail.com" in body
     assert SECRET in body  # secret dạng văn bản rõ
 
@@ -195,3 +195,30 @@ def test_export_import_csv_roundtrip(client):
         client.delete(f"/api/accounts/{a['id']}")
     r = client.post("/api/import-csv", json={"csv": csv_text})
     assert r.status_code == 200 and r.json()["added"] == 1
+
+
+def test_note_via_api(client):
+    client.post("/api/setup", json={"password": PW})
+    acc = client.post(
+        "/api/accounts", json={"name": "A", "secret": SECRET, "note": "ban dau"}
+    ).json()
+    assert acc["note"] == "ban dau"
+    r = client.patch(f"/api/accounts/{acc['id']}/note", json={"note": "sua lai"})
+    assert r.status_code == 200 and r.json()["note"] == "sua lai"
+
+
+def test_note_missing_via_api_404(client):
+    client.post("/api/setup", json={"password": PW})
+    assert client.patch("/api/accounts/khong-co/note", json={"note": "x"}).status_code == 404
+
+
+def test_csv_roundtrip_keeps_note(client):
+    client.post("/api/setup", json={"password": PW})
+    client.post("/api/accounts", json={"name": "A", "secret": SECRET, "note": "nhom 1"})
+    csv_text = client.get("/api/export-csv").text
+    assert "nhom 1" in csv_text
+    for a in client.get("/api/accounts").json()["accounts"]:
+        client.delete(f"/api/accounts/{a['id']}")
+    client.post("/api/import-csv", json={"csv": csv_text})
+    accs = client.get("/api/accounts").json()["accounts"]
+    assert accs[0]["note"] == "nhom 1"

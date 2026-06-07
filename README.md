@@ -23,6 +23,7 @@ cho tất cả cùng lúc, bảo vệ bằng **mật khẩu chủ** và mã hóa
   và secret không hợp lệ.
 - Hiển thị mã + đếm ngược thời gian còn lại; tìm kiếm theo tên; bấm vào mã để copy.
 - **Đổi tên** và **sắp xếp** tài khoản (đưa lên/xuống).
+- **Ghi chú** cho từng tài khoản (nhóm/mục đích) — hiển thị dưới tên, có trong CSV.
 - **PWA**: cài được như app riêng (cửa sổ riêng, có icon) qua nút "Install" của trình duyệt.
 
 ## Cài đặt & chạy
@@ -75,6 +76,7 @@ pytest
 | GET | `/api/accounts` | Danh sách tài khoản + mã hiện tại (cần mở khóa) |
 | POST | `/api/accounts` | Thêm tài khoản (name, secret) |
 | PATCH | `/api/accounts/{id}` | Đổi tên tài khoản |
+| PATCH | `/api/accounts/{id}/note` | Đặt/sửa ghi chú tài khoản |
 | POST | `/api/accounts/reorder` | Sắp xếp lại thứ tự (danh sách id) |
 | POST | `/api/accounts/import-uri` | Thêm từ chuỗi `otpauth://` |
 | GET | `/api/accounts/{id}/reveal` | Lấy secret + otpauth + QR (SVG) của 1 tài khoản |

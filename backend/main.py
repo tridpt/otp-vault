@@ -53,6 +53,7 @@ class AddAccountRequest(BaseModel):
     digits: int = 6
     period: int = 30
     algorithm: str = "SHA1"
+    note: str = ""
 
 
 class ImportUriRequest(BaseModel):
@@ -70,6 +71,10 @@ class ImportCsvRequest(BaseModel):
 
 class RenameRequest(BaseModel):
     name: str
+
+
+class NoteRequest(BaseModel):
+    note: str
 
 
 class ReorderRequest(BaseModel):
@@ -96,6 +101,7 @@ def _code_payload(account: dict) -> dict:
             "code": code,
             "remaining": totp.seconds_remaining(period),
             "period": period,
+            "note": account.get("note", ""),
             "error": None,
         }
     except totp.TOTPError as exc:
@@ -105,6 +111,7 @@ def _code_payload(account: dict) -> dict:
             "code": None,
             "remaining": 0,
             "period": period,
+            "note": account.get("note", ""),
             "error": str(exc),
         }
 
@@ -187,6 +194,7 @@ def add_account(req: AddAccountRequest) -> dict:
         digits=req.digits,
         period=req.period,
         algorithm=req.algorithm,
+        note=req.note,
     )
     return _code_payload(account)
 
@@ -221,6 +229,16 @@ def rename_account(account_id: str, req: RenameRequest) -> dict:
     """Đổi tên tài khoản."""
     _ensure_unlocked()
     acc = session.rename_account(account_id, req.name)
+    if acc is None:
+        raise HTTPException(status_code=404, detail="Không tìm thấy tài khoản")
+    return _code_payload(acc)
+
+
+@app.patch("/api/accounts/{account_id}/note")
+def set_note(account_id: str, req: NoteRequest) -> dict:
+    """Đặt/sửa ghi chú cho tài khoản."""
+    _ensure_unlocked()
+    acc = session.set_note(account_id, req.note)
     if acc is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy tài khoản")
     return _code_payload(acc)
@@ -296,7 +314,7 @@ def export_csv() -> PlainTextResponse:
     accounts = session.load_accounts()
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["name", "secret", "digits", "period", "algorithm", "otpauth"])
+    writer.writerow(["name", "secret", "digits", "period", "algorithm", "note", "otpauth"])
     for a in accounts:
         digits = a.get("digits", 6)
         period = a.get("period", 30)
@@ -309,7 +327,9 @@ def export_csv() -> PlainTextResponse:
         except totp.TOTPError:
             secret = a.get("secret", "")
             uri = ""
-        writer.writerow([a.get("name", ""), secret, digits, period, algorithm, uri])
+        writer.writerow(
+            [a.get("name", ""), secret, digits, period, algorithm, a.get("note", ""), uri]
+        )
     # BOM giúp Excel mở đúng tiếng Việt (UTF-8).
     return PlainTextResponse("\ufeff" + buf.getvalue(), media_type="text/csv")
 
@@ -340,6 +360,7 @@ def import_csv(req: ImportCsvRequest) -> dict:
                     "digits": norm.get("digits") or 6,
                     "period": norm.get("period") or 30,
                     "algorithm": norm.get("algorithm") or "SHA1",
+                    "note": norm.get("note", ""),
                 }
             )
     except csv.Error as exc:

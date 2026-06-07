@@ -209,6 +209,27 @@ def test_rename_empty_falls_back_default():
     assert out["name"] == "Tài khoản"
 
 
+def test_add_account_with_note():
+    store.session.setup(PW)
+    acc = store.session.add_account("A", SECRET, note="nhóm cày game")
+    assert acc["note"] == "nhóm cày game"
+    assert store.session.get_account(acc["id"])["note"] == "nhóm cày game"
+
+
+def test_set_note():
+    store.session.setup(PW)
+    acc = store.session.add_account("A", SECRET)
+    out = store.session.set_note(acc["id"], "ghi chú mới")
+    assert out["note"] == "ghi chú mới"
+    # Xóa ghi chú.
+    assert store.session.set_note(acc["id"], "")["note"] == ""
+
+
+def test_set_note_missing_returns_none():
+    store.session.setup(PW)
+    assert store.session.set_note("khong-co", "x") is None
+
+
 def test_reorder_accounts():
     store.session.setup(PW)
     a = store.session.add_account("A", SECRET)
@@ -256,3 +277,9 @@ def test_import_entries_skips_duplicates():
     store.session.add_account("dup", SECRET)
     n = store.session.import_entries([{"name": "dup", "secret": SECRET}])
     assert n == 0
+
+
+def test_import_entries_keeps_note():
+    store.session.setup(PW)
+    store.session.import_entries([{"name": "a", "secret": SECRET, "note": "ghi chu"}])
+    assert store.session.load_accounts()[0]["note"] == "ghi chu"
