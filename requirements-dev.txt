@@ -1,0 +1,6 @@
+# Phụ thuộc cho phát triển / chạy test (không cần khi chạy app thật).
+-r requirements.txt
+
+pytest>=8.0.0
+hypothesis>=6.100.0
+httpx>=0.27.0   # cho fastapi.testclient.TestClient

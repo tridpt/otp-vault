@@ -37,6 +37,23 @@ uvicorn main:app --reload --port 8200
 
 Mở trình duyệt: http://127.0.0.1:8200 — lần đầu sẽ yêu cầu tạo mật khẩu chủ.
 
+## Kiểm thử (test)
+
+Bộ test tự động (pytest) kiểm chứng TOTP, kho mã hóa và API. Test chạy **cô lập**
+trên vault tạm, không đụng dữ liệu thật.
+
+```bat
+cd /d d:\AI_App\totp-manager
+.venv\Scripts\activate
+pip install -r requirements-dev.txt
+pytest
+```
+
+- `tests/test_totp.py` — sinh mã theo test vector RFC 6238 (SHA1/256/512), chuẩn
+  hóa secret, round-trip otpauth, biên `seconds_remaining` (property-based bằng hypothesis).
+- `tests/test_store.py` — setup/unlock/lock, auto-lock, CRUD, mã hóa-tại-chỗ, export/import.
+- `tests/test_api.py` — quy tắc khóa (401), lỗi 400/404, luồng đầu-cuối qua TestClient.
+
 ## API
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
